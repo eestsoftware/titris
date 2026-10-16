@@ -3,10 +3,8 @@
 #include <math.h>
 #include "../include/tetris.h"
 
-const Vector2i wallKicksR[4] = { (Vector2i){.x=-1,.y=0}, (Vector2i){.x=-1,.y=1}, (Vector2i){.x=0,.y=-2}, (Vector2i){.x=-1,.y=-2} };
-const Vector2i wallKicksIR[4] = { (Vector2i){.x=-2,.y=0}, (Vector2i){.x=1,.y=0}, (Vector2i){.x=-2,.y=-1}, (Vector2i){.x=1,.y=2} };
-const Vector2i wallKicksL[4] = { (Vector2i){.x=1,.y=0}, (Vector2i){.x=1,.y=1}, (Vector2i){.x=0,.y=-2}, (Vector2i){.x=1,.y=-2} };
-const Vector2i wallKicksIL[4] = { (Vector2i){.x=-1,.y=0}, (Vector2i){.x=2,.y=0}, (Vector2i){.x=-1,.y=2}, (Vector2i){.x=2,.y=-1} };
+const Vector2i wallKicksR[4] = { (Vector2i){.x=-1,.y=0}, (Vector2i){.x=-1,.y=-1}, (Vector2i){.x=0,.y=2}, (Vector2i){.x=-1,.y=2} };
+const Vector2i wallKicksIR[4] = { (Vector2i){.x=-2,.y=0}, (Vector2i){.x=1,.y=0}, (Vector2i){.x=-2,.y=1}, (Vector2i){.x=1,.y=-2} };
 
 void initTetromino(Tetromino *piece, int id) {
     piece->id = id;
@@ -65,7 +63,7 @@ void initTetromino(Tetromino *piece, int id) {
 Vector2i rotatedTetromino(Vector2i points, int rotation, int id) {
     if (id == 3) return points;
 
-    int pivotx = id > 0 ? 1 : 3;
+    int pivotx = id > 0 ? 1 : 3;//I hate I piece
     int pivoty = id > 0 ? 1 : 0;
 
     for (int j = 0; j < rotation; ++j) {

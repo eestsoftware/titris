@@ -4,17 +4,30 @@
 #include <math.h>
 #include <time.h>
 #include "../include/tetris.h"
+#include "../include/parseargs.h"
 
-int playing = 1, frames = 0, paused = 0, colors = 1, termColors = 1, grace = -1, graceAdds = 0, didHold = 0, lost = 0;
+//I lowk dont belive in C bools
+int playing = 1, frames = 0, paused = 0, didHold = 0, lost = 0;//game params
+int grace = 0, graceAdds = 0, realSeconds = 0; //grace
+
+void graceCheck() {
+    //if (tryMove == 0 && (graceAdds < graceLimit) && grace > -1 && grace <= 1) 
+    if (grace == 0 || graceAdds > 6) return;
+    ++graceAdds;
+    realSeconds = 1;
+}
+
 long score = 0;
 int lines = 0;
 int level = 1, frameTime = 100;
+int b2b = 0, lastScoreAction = 0, tSpin = 0;
 
-const Vector2i board = (Vector2i){ .x = 11, .y = 22 };
+int lastMoveWasRotation = 0;
+
+Vector2i board = (Vector2i){ .x = 11, .y = 22 };
 const int boardOffset = 8;
 int **minos;
 
-int nextBoxes = 3;
 int inQueue = 0; //next.size
 Tetromino *next[14];
 
@@ -64,40 +77,58 @@ int tryMoveTetromino(Tetromino *piece, Vector2i move, int pretend) {
 	if (minos[nPos.y][nPos.x - boardOffset] >= 1) return 1; //Collision check
     }
     if (pretend) return 0;
+    lastMoveWasRotation = 0;
     piece->position.x += move.x;
     piece->position.y += move.y;
     return 0;
 }
 
-int tryRotateTetromino(Tetromino *piece, int rotation) {
+int tryRotateTetromino(Tetromino *piece, int rotation, int cClockwise) {
+    if (rotation < 0) rotation = 3;
     int failed = 0;
     for (int i = 0; i < 4; ++i) {
 	Vector2i nPos = rotatedTetromino(piece->points[i], rotation, piece->id);
 	nPos.x += piece->position.x;
 	nPos.y += piece->position.y;
 	if (nPos.x >= board.x + boardOffset || nPos.x <= boardOffset) failed = 1;//OOB checks
-	if (nPos.y >= board.y) failed = 1;
-	if (minos[nPos.y][nPos.x - boardOffset] >= 1) failed = 1; //Collision check
+	else if (nPos.y >= board.y || nPos.y < 0) failed = 1;
+	else if (minos[nPos.y][nPos.x - boardOffset] >= 1) failed = 1; //Collision check
+	if (failed) break;
     }
+
     int oldRot = piece->rotation;
     piece->rotation = rotation;
-    if (failed) { // WALLKICKS WILL WORK!
-	for (int i = 0; i < 4; ++i) {
-	    if (piece == NULL) return 1;
-	    Vector2i move = piece->id > 0 ? wallKicksR[i] : wallKicksIR[i]; //wallkicksR is rotation 1
-	    if (piece->id == 0 && (rotation == 3 || rotation == 0)) {
-		move = wallKicksIR[(i % 2 == 0) ? (i + 1) : (i - 1)];
-	    }
-	    if (rotation == 2 || rotation == 3) {
-		move.x *= -1;
-		move.y *= -1;
-	    }
-	    if (tryMoveTetromino(piece, move, 0) == 0) return 0;
-	}
-	piece->rotation = oldRot;
-	return 1;
+    if (!failed) {
+	lastMoveWasRotation = 1;
+	return 0;
     }
-    return 0;
+
+    // WALLKICKS WILL WORK!
+    for (int i = 0; i < 4; ++i) {
+	if (piece == NULL) return 1;
+	Vector2i move = piece->id > 0 ? wallKicksR[i] : wallKicksIR[i]; //wallkicksR is rotation 1
+	if (piece->id == 0 && (oldRot == 3 || oldRot == 1 || (oldRot == 0 && cClockwise) || (oldRot == 2 && cClockwise) )) {
+	    move = wallKicksIR[(i % 2 == 0) ? (i + 1) : (i - 1)]; //swap 0 with 1 , 1 - 0, 2 - 3, 3 - 2
+	}
+	if (oldRot == 1)  {
+	    move.x *= -1;
+	    if (piece->id > 0 && !cClockwise) move.y *= -1;
+	}
+	if ((oldRot == 2 && !cClockwise) || (oldRot == 0 && cClockwise))  {
+	    move.x *= -1;
+	    if (piece->id <= 0) move.y *= -1;
+	}
+	if (oldRot == 3 && (piece->id > 0 || !cClockwise) ) { //Dont do this for cclockwise I
+	    move.y *= -1;
+	}
+	if (piece->id <= 0 && cClockwise && oldRot == 2) move.y *= 1;
+	if (tryMoveTetromino(piece, move, 0) == 0) {
+	    lastMoveWasRotation = i < 3 ? 1 : 2;
+	    return 0;
+	}
+    }
+    piece->rotation = oldRot;
+    return 1;
 }
 
 Tetromino* getShadow(Tetromino *piece, int nullIfSame) {
@@ -131,12 +162,50 @@ void printBoard() {
     erase();
 
     attron(COLOR_PAIR(24));
-    mvprintw(8,  2, "SCORE: %ld%s", (score < 100000) ? score : score / 1000, (score < 100000) ? "" : "K");
+    mvprintw(8,  2, "SCORE: %'ld%s", (score < 100000) ? score : score / 1000, (score < 100000) ? "" : "K");
     mvprintw(9,  2, "LEVEL: %d", level);
     mvprintw(10, 2, "LINES: %d", lines);
-    //mvprintw(11, 2, "FRAMES: %d", frames);
-    mvprintw(11, 2, "GRACE: %d", grace);
-    mvprintw(12, 2, "GRACEADDS: %d", graceAdds);
+    if (showLineClear == 1 && lastScoreAction > 0) {
+	char *clearType = "SINGLE";
+	switch(lastScoreAction) {
+	case 2:
+	    clearType = "DOUBLE";
+	    break;
+	case 3:
+	    clearType = "TRIPLE";
+	    break;
+	case 4:
+	    clearType = "TETRIS";
+	    break;
+	case 5:
+	    clearType = "MINI T-SPIN";
+	    break;
+	case 6:
+	    clearType = "MINI T-SPIN\nSINGLE";
+	    break;
+	case 7:
+	    clearType = "MINI T-SPIN\nDOUBLE";
+	    break;
+	case 8:
+	    clearType = "T-SPIN";
+	    break;
+	case 9:
+	    clearType = "T-SPIN SINGLE";
+	    break;
+	case 10:
+	    clearType = "T-SPIN DOUBLE";
+	    break;
+	case 11:
+	    clearType = "T-SPIN TRIPLE";
+	    break;
+	}
+	//if (b2b) sprintf(clearType, "%s", "\nBACK-TO-BACK");
+	mvprintw(13, 2, "%s\n%s", clearType, b2b ? "BACK-TO-BACK" : "");
+    }
+    //mvprintw(11, 2, "GRACE: %d", grace);
+    //mvprintw(12, 2, "GRACEADDS: %d", graceAdds);
+    //mvprintw(13, 2, "SECS: %d", realSeconds);
+    //mvprintw(13, 2, "LASTWROT?: %d", lastMoveWasRotation);
     attroff(COLOR_PAIR(24));
 
     renderBox( board, (Vector2i){.x = boardOffset, .y = 0 }, NULL);
@@ -158,8 +227,14 @@ void printBoard() {
     }
 
     if (dropping != NULL) renderTetromino(dropping, 1);
-    if (paused) mvprintw(board.y + 2, boardOffset + board.x / 2, "PAUSED");
+    if (paused) mvprintw(board.y + 2, boardOffset + (board.x / 2) + 10, "PAUSED");
     if (lost) mvprintw(board.y + 3, boardOffset + board.x / 2, "GAME OVER. GG.\nFINAL SCORE: %'ld", score);
+}
+
+void reCheckLevel() {
+    level = 1 + (lines / 10);
+    float newFrameTime = pow(0.8-((float)(level-1.0)*0.007), level-1);
+    frameTime = floor(newFrameTime * 100);
 }
 
 void checkLineClears() {
@@ -173,16 +248,36 @@ void checkLineClears() {
 	    ++lineClears;
 	}
     }
-    if (lineClears <= 0) return;
+    if (lineClears <= 0) {
+	if (tSpin > 0) {
+	    score += (tSpin == MTSP ? 100 : 400) * level;
+	    lastScoreAction = tSpin;
+	}
+	return;
+    }
     lines += lineClears;
-    level = 1 + (lines / 10);
-    float newFrameTime = pow(0.8-((float)(level-1.0)*0.007), level-1);
-    frameTime = floor(newFrameTime * 100);
+    reCheckLevel();
     
     int plusScore = 100;
     plusScore += 200 * (lineClears - 1);
     if (lineClears >= 4) plusScore += 100;
+    b2b = 0;
+    lineClears += tSpin; // for easier score measuring
+    if (lineClears == 4 && lastScoreAction == TETRIS) b2b = 1;
+    if (lineClears >= MTSP_SINGLE) {
+	plusScore += lineClears >= TSP ? 100 : 700;
+	if (lineClears >= TSP_DOUBLE) plusScore += 200;
+	if (lineClears >= TSP_TRIPLE) plusScore += 400;
+    }
+    if (lineClears >= TETRIS && lastScoreAction >= TETRIS &&\
+    lineClears != MTSP && lineClears != TSP &&\
+    lastScoreAction != MTSP && lastScoreAction != TSP) {	
+	plusScore *= 1.5;
+	b2b = 1;
+    }
     score += plusScore * level;
+    tSpin = 0;
+    lastScoreAction = lineClears;
 
     int writey = board.y - 1;
     for (int y = board.y - 1; y >= 0; --y) {
@@ -203,23 +298,6 @@ void checkLineClears() {
     for (;writey >= 0;--writey) {
         for (int x = 1; x < board.x; ++x) minos[writey][x] = 0;
     }
-//
-//    int startY = linesToClear[0];
-//    for (int i = 0; i < lineClears; ++i) {
-//	if (linesToClear[i] > startY) startY = linesToClear[i];
-//	for (int x = 0; x < board.x; ++x) {
-//	    minos[linesToClear[i]][x] = 0;
-//	}
-//    }
-//    for (int y = startY; y > 0; --y) {
-//	if (y + lineClears >= board.y) continue; // Might be a bug here?
-//	for (int x = 1; x < board.x; ++x) {
-//	    if (minos[y][x] <= 0) continue;
-//	    minos[y + lineClears][x] = minos[y][x];
-//	    minos[y][x] = 0;
-//	}
-//    }
-
     checkLineClears();
 }
 
@@ -229,7 +307,7 @@ void updateHoldings() {
     dropping = next[0];
     dropping->position.x = boardOffset + (board.x / 2);
     dropping->position.y = dropping->id > 0 ? 1 : 0;
-    grace = -1;
+    grace = 0;
     graceAdds = 0;
     if (tryMoveTetromino(dropping, (Vector2i){ .x = 0, .y = 0 }, 0)) lost = 1;
     for (int i = 0; i < nextBoxes; ++i) {
@@ -242,12 +320,12 @@ void holdPiece(Tetromino *piece) {
     if (didHold) return;
     didHold = 1;
     if (held != NULL) {
-	Tetromino *store = dropping;
+	Tetromino *store = piece;
 	dropping = held;
 	held = store;
 	dropping->position.x = boardOffset + (board.x / 2);
     } else {
-	held = dropping;
+	held = piece;
 	dropping = NULL;
 	next[0] = NULL;
 	shift_array(next, inQueue, 0);
@@ -257,14 +335,63 @@ void holdPiece(Tetromino *piece) {
     held->position.y = 2;
 }
 
-void setDropped(Tetromino *piece) {
+Vector2i checkTSpin(Vector2i centerPos, int rotation) {
+    Vector2i corners = {0};//x is front, y is back
+    for (int i = 0; i < 4; ++i) {
+	Vector2i dir = (Vector2i){ .x = -1, .y = -1 };
+	if (i % 2 == 1) dir.x *= -1;
+	if (i >= 2) dir.y *= -1;
+	Vector2i nPos = centerPos;
+	nPos.x += dir.x;
+	nPos.y += dir.y;
+	if (nPos.y >= board.y || nPos.x >= board.x || nPos.y < 0 || nPos.x < 1) {
+	    goto checkRot;
+	}
+	if (minos[nPos.y][nPos.x] <= 0) continue;
+	checkRot:
+	switch(rotation) { //Too lazy to do some rotation bs here so heres a hard-coded switch 
+	case 0:
+	    if (dir.y < 0) ++corners.x;
+	    else ++corners.y;
+	    break;
+	case 1:
+	    if (dir.x > 0) ++corners.x;
+	    else ++corners.y;
+	    break;
+	case 2:
+	    if (dir.y > 0) ++corners.x;
+	    else ++corners.y;
+	    break;
+	case 3:
+	    if (dir.x < 0) ++corners.x;
+	    else ++corners.y;
+	    break;
+	}
+    }
+    if (lastMoveWasRotation >= 2) {
+	int xCorners = corners.x;
+	int yCorners = corners.y;
+	corners.y = xCorners;
+	corners.x = yCorners;
+    }
+    return corners;
+}
+
+void setDropped(Tetromino *piece, int doBonus) {
+    tSpin = 0;
     Tetromino *shadow = getShadow(piece, 0);
     for (int i = 0; i < 4; ++i) {
 	Vector2i nPos = rotatedTetromino(shadow->points[i], shadow->rotation, piece->id);
 	nPos.x += shadow->position.x - boardOffset;
+	if (doBonus) score += (piece->position.y) * 2;
 	nPos.y += shadow->position.y;
-	if (nPos.y >= board.y || nPos.x >= board.x || nPos.y < 0 || nPos.x < 0) continue;
+	if (nPos.y >= board.y || nPos.x >= board.x || nPos.y < 0 || nPos.x < 1) continue;
 	minos[nPos.y][nPos.x] = 1+piece->id;
+	if (piece->id != 6 || i != 2 || lastMoveWasRotation <= 0) continue;
+
+	Vector2i corners = checkTSpin(nPos, piece->rotation);
+	if (corners.x >= 2 && corners.y > 0) tSpin = TSP;
+	else if (corners.x > 0 && corners.y >= 2) tSpin = MTSP;
     }
     free(shadow);
     free(dropping);
@@ -274,35 +401,33 @@ void setDropped(Tetromino *piece) {
     checkLineClears();
     didHold = 0;
     updateHoldings();
-}
-
-void graceCheck(int tryMove, int punish) {
-    if (tryMove == 0 && (graceAdds < 2 || punish) && grace > -1 && grace <= 1) {
-	++graceAdds;
-	if (!punish) ++grace;
-	else if (grace > 0) --grace;
-    }
+    reCheckLevel();
 }
 
 void getInput(int ch) {
-    if (ch == 'q') playing = 0;
-    if (ch == 'p') paused ^= 1;
+    if (ch == 'q' || ch == 'Q') playing = 0;
+    if (ch == 'p' || ch == 'P') paused ^= 1;
 
-    if (dropping == NULL || paused) return;
+    if (dropping == NULL || paused || lost) return;
     
     if (ch == KEY_LEFT || ch == KEY_RIGHT) {
-	int tryMove = tryMoveTetromino(dropping, (Vector2i){ .x = ch == KEY_LEFT ? -1 : 1, .y = 0 }, 0); 
-	graceCheck(tryMove, 0);
+	graceCheck();
+	tryMoveTetromino(dropping, (Vector2i){ .x = ch == KEY_LEFT ? -1 : 1, .y = 0 }, 0); 
     }
-    if (ch == KEY_DOWN) {
-	if (tryMoveTetromino(dropping, (Vector2i){ .x = 0, .y = 1 }, 0) == 1 && grace < 0) grace = 1;
-	else if (grace > -1 && frames % 8 == 0) --grace;
-    } else if (ch == KEY_UP || ch == 'z') {
-	int tryMove = tryRotateTetromino(dropping, (dropping->rotation + 1) % 4);
-	graceCheck(tryMove, 1);
+    if (ch == KEY_DOWN) { 
+	// soft drop
+	int tryMove = tryMoveTetromino(dropping, (Vector2i){ .x = 0, .y = 1 }, 0); 
+	if (tryMove == 0) ++score;
+	else if (tryMove == 1 && grace == 0) {
+	    grace = 1;
+	    realSeconds = 1;
+	}
+    } 
+    if (ch == KEY_UP || ch == 'x' || ch == 'z') {
+	graceCheck();
+	tryRotateTetromino(dropping, (dropping->rotation + (ch != 'z' ? 1 : -1)) % 4, ch == 'z' ? 1 : 0);
     }
-    if (ch == ' ') setDropped(dropping);
-
+    if (ch == ' ') setDropped(dropping, 1);
     if (ch == 'c') holdPiece(dropping);
 }
 
@@ -315,45 +440,50 @@ void initColors() {
     //I red
     buffColor = termColors ? 4 : 21;
     init_pair(9, buffColor, colors ? buffColor : 0);
-    init_pair(17, buffColor, 0);
+    init_pair(17, buffColor, 8);
     init_color(22, 666, 0, 941);
     //J purple
     buffColor = termColors ? 5 : 22;
     init_pair(10, buffColor, colors ? buffColor : 0);
-    init_pair(18, buffColor, 0);
+    init_pair(18, buffColor, 8);
     init_color(23, 917, 917, 0);
     //L yellow
     buffColor = termColors ? 6 : 23;
     init_pair(11, buffColor, colors ? buffColor : 0);
-    init_pair(19, buffColor, 0);
+    init_pair(19, buffColor, 8);
     init_color(24, 0, 0, 805);
     //O blue
     buffColor = termColors ? 1 : 24;
     init_pair(12, buffColor, colors ? buffColor : 0);
-    init_pair(20, buffColor, 0);
+    init_pair(20, buffColor, 8);
     init_color(25, 0, 921, 921);
     //S teal
     buffColor = termColors ? 3 : 25;
     init_pair(13, buffColor, colors ? buffColor : 0);
-    init_pair(21, buffColor, 0);
+    init_pair(21, buffColor, 8);
     init_color(26, 925, 0, 925);
     //Z pink
     buffColor = termColors ? 13 : 26;
     init_pair(14, buffColor, colors ? buffColor : 0);
-    init_pair(22, buffColor, 0);
+    init_pair(22, buffColor, 8);
     init_color(27, 0, 933, 0);
     //T green
     buffColor = termColors ? 10 : 27;
     init_pair(15, buffColor, colors ? buffColor : 0);
-    init_pair(23, buffColor, 0);
+    init_pair(23, buffColor, 8);
     init_color(28, 933, 933, 933);
     //X white
     buffColor = termColors ? 7 : 28;
     init_pair(16, 28, colors ? buffColor : 0);
-    init_pair(24, 28, 0);
+    init_pair(24, 28, 8);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    //parse flags
+    if (parseArgs(argc, argv)) return 1;
+    board.x = boardX;
+    board.y = boardY;
+
     //init board
     minos = malloc(board.y * sizeof(*minos));
     for (int i = 0; i < board.y; ++i) {
@@ -382,20 +512,21 @@ int main() {
 
     while (playing) {
 	printBoard();
-	if (dropping != NULL && (frames == 0 || grace == 0) && (tryMoveTetromino(dropping, (Vector2i){.x=0,.y=1}, 0) == 1 || tryMoveTetromino(dropping, (Vector2i){.x=0,.y=2}, 1) == 1)) {
-	    if (grace == 0) { setDropped(dropping); }
-	    else if (grace < 0) {
+	if (!paused && dropping != NULL && (frames == 0 || (grace == 1 && realSeconds == 0)) && (tryMoveTetromino(dropping, (Vector2i){.x=0,.y=1}, 0) == 1 || tryMoveTetromino(dropping, (Vector2i){.x=0,.y=2}, 1) == 1)) {
+	    if (grace == 1 && realSeconds == 0 && tryMoveTetromino(dropping, (Vector2i){.x=0,.y=1}, 0) == 1) { setDropped(dropping, 0); } 
+	    else if (grace == 0) {
 		grace = 1;
-	    } else {
-		--grace;
-	    }
-	} else if (dropping != NULL && tryMoveTetromino(dropping, (Vector2i){.x=0,.y=1}, 1) == 0) {
-	    grace = -1;
+		realSeconds = 1;
+	    } 
+	} else if (dropping != NULL && tryMoveTetromino(dropping, (Vector2i){.x=0,.y=3}, 1) == 0 && realSeconds <= 10 && realSeconds > 2) {
+	    grace = 0;
+	    realSeconds = 1;
 	}
 	getInput(getch());
 	refresh();
 	if (!paused && !lost) {
 	    frames = (frames + 1) % frameTime;
+	    if (grace >= 1) realSeconds = (realSeconds + 1) % 50;
 	}
 
         deadline.tv_nsec += frame_ns;

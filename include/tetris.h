@@ -13,10 +13,13 @@ typedef struct Tetromino {
     int id;
 } Tetromino;
 
+enum scoreAction { 
+   NONE, SINGLE, DOUBLE, TRIPLE, TETRIS, MTSP, MTSP_SINGLE, MTSP_DOUBLE, TSP, TSP_SINGLE, TSP_DOUBLE, TSP_TRIPLE
+};
+// 4 - tetris, 5 - mini start, 8 - tsp start
+
 extern const Vector2i wallKicksR[4];
 extern const Vector2i wallKicksIR[4];
-extern const Vector2i wallKicksL[4];
-extern const Vector2i wallKicksIL[4];
 
 void initTetromino(Tetromino *piece, int id);
 // 0: I, 1: J, 2: L, 3: O, 4: S, 5: Z, 6: T
