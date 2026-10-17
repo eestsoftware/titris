@@ -16,7 +16,8 @@ all: build
 build: CFLAGS = -Wall -Wextra $(BUILD_CFLAGS)
 build: $(PROGRAM)
 
-$(PROGRAM): $(OBJECTS) | bin
+$(PROGRAM): $(OBJECTS)
+	mkdir -p ./bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: ./src/%.c
