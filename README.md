@@ -11,7 +11,8 @@ As well as other helpful features:
 * Counter-clockwise rotation
 * Well-defined grace period for fallen pieces
 
-You can set flags to customize amount of preview windows, starting level, width and height of the field. **It can also run inside a TTY** if run with `titris -wz` to enable accurate colors.
+You can set flags to customize amount of preview windows, starting level, width and height of the field.
+This runs inside of any terminal, and **it can also run inside a TTY** if run with `titris -wz` to enable accurate colors.
 
 Inspired by [Emacs](https://www.gnu.org/software/emacs/) tetris and the one available on the [tetris website](https://play.tetris.com).
       
