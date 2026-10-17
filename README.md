@@ -16,7 +16,7 @@ You can set flags to customize amount of preview windows, starting level, width 
 Inspired by [Emacs](https://www.gnu.org/software/emacs/) tetris and the one available on the [tetris website](https://play.tetris.com).
       
 <p align=center>
-    <img width=400 src="./titris.png">
+    <img width=400 src="./titris.png"><br>
     <i>Game window with Gruvbox-Dark color scheme</i>
 </p>
 
@@ -38,7 +38,7 @@ You can specify a make PREFIX to change the installation path (default: /usr/loc
 ## Usage
 Run `titris` in any terminal. Enable `-wz` for better rendering if running inside a TTY.
 
-```console
+```sh
 Usage: titris [OPTIONS]
 
 Options:
