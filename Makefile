@@ -11,7 +11,7 @@ OBJECTS = main.o tetris.o parseargs.o renderer.o
 
 BINDIR:=$(PREFIX)/bin
 
-.phony: all build debug clean install uninstall
+all: build
 
 build: CFLAGS = -Wall -Wextra $(BUILD_CFLAGS)
 build: $(PROGRAM)
