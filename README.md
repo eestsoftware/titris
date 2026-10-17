@@ -24,7 +24,9 @@ Inspired by [Emacs](https://www.gnu.org/software/emacs/) tetris and the one avai
 ## Installation
 
 Installation is currently only for Linux.
-Depends on libncurses but you probably already have that installed.
+Dependancies:
+* libncurses-dev
+* libtinfo (This is provided with libncurses on most distributions)
 
 ```console
 $ git clone https://github.com/eestsoftware/titris
