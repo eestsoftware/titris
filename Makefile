@@ -1,23 +1,36 @@
+PREFIX ?= /usr/local
+
 CC = gcc
 CFLAGS = -Wall -Wextra #-Wfaps
-CFLAGS += -g3 -O0 -DDEBUG -fno-omit-frame-pointer #debug
-#CFLAGS += -Os
+DEBUG_CFLAGS += -g3 -O0 -DDEBUG -fno-omit-frame-pointer #debug
+BUILD_CFLAGS += -O3 -flto -ffunction-sections -fdata-sections
 LDFLAGS = -lm -lncurses -ltinfo
 
 PROGRAM = ./bin/titris
-OBJECTS = main.o tetris.o parseargs.o
+OBJECTS = main.o tetris.o parseargs.o renderer.o
 
-$(PROGRAM): $(OBJECTS)
+BINDIR:=$(PREFIX)/bin
+
+.phony: all build debug clean install uninstall
+
+build: CFLAGS = -Wall -Wextra $(BUILD_CFLAGS)
+build: $(PROGRAM)
+
+$(PROGRAM): $(OBJECTS) | bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-main.o: ./src/main.c
+%.o: ./src/%.c
 	$(CC) $(CFLAGS) -c $<
 
-tetris.o: ./src/tetris.c
-	$(CC) $(CFLAGS) -c $<
+debug: CFLAGS = -Wall -Wextra $(DEBUG_CFLAGS)
+debug: clean $(PROGRAM)
 
-parseargs.o: ./src/parseargs.c
-	$(CC) $(CFLAGS) -c $<
+install: ./bin/titris
+	install -d $(BINDIR)
+	install -s -Dm755 ./bin/titris -t $(BINDIR)
+
+uninstall:
+	rm ${BINDIR}/titris
 
 clean:
 	rm -f $(OBJECTS) $(PROGRAM)
