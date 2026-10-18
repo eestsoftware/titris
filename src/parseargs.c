@@ -4,36 +4,40 @@
 #include <unistd.h>
 #include <getopt.h>
 
-int colors = 1, termColors = 1, showLineClear = 1, nextBoxes = 3, boardX = 11, boardY = 22, debugInfo = 0, startLevel = 1, whiteBorders = 0, zMagenta = 0;
+int colors = 1, termColors = 1, showLineClear = 1, nextBoxes = 3, boardX = 11, boardY = 22, debugInfo = 0, startLevel = 1, whiteBorders = 0, zMagenta = 0, variableGoal = 0;
 
-#define ARG_AMT 9
+#define ARG_AMT 11
 
 static const struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
+    {"level_start", required_argument, 0, 'l'},
+    {"variable_goal", no_argument, 0, 'v'},
+    {"next_boxes", required_argument, 0, 'n'},
+    {"x_width", required_argument, 0, 'x'},
+    {"y_height", required_argument, 0, 'y'},
+    {"popup_score", no_argument, 0, 'p'},
     {"solid_color", no_argument, 0, 's'},
     {"term_colors", no_argument, 0, 't'},
     {"white_borders", no_argument, 0, 'w'},
     {"z_magenta", no_argument, 0, 'z'},
-    {"popup_score", no_argument, 0, 'p'},
-    {"level_start", required_argument, 0, 'l'},
-    {"next_boxes", required_argument, 0, 'n'},
-    {"x_width", required_argument, 0, 'x'},
-    {"y_height", required_argument, 0, 'y'},
     {"debug_info", no_argument, 0, 'd'},
     {0, 0, 0, 0}
 };
 
-
 const char* descs[] = { "Show this menu.",\
+" Gameplay Options:",\
+"Level at which to start the game. AMT (1-15), default: 1.",\
+"Use a variable-goal system instead of the fixed-goal one. Where each level requires 5*(Level) lines to clear, instead of a fixed 10 lines per level.",\
+"Amount of next preview windows to display. AMT (0-7), default: 3.",\
+"Width of the playing field. AMT(7-100), default: 10.",\
+"Height of the playing field.AMT(8-100), default: 22.",\
+"Disable the text that displays the last action that gave points.",\
+" Color Options:",\
 "Disable rendering tetrominos with solid colors, and instead render with text characters.",\
 "Disable rendering tetrominos with the terminal color scheme, and use the default one instead (Based on GNU Emacs Tetris)",\
 "Render borders with solid white. (Useful for displaying in a TTY)",\
 "Render Z Tetromino as Magenta color (same as J) to render correctly in a TTY.",\
-"Disable the text that displays the last action that gave points.",\
-"Level at which to start the game. AMT (1-15), default: 1.",\
-"Amount of next preview windows to display. AMT (0-7), default: 3.",\
-"Width of the playing field. AMT(7-100), default: 10.",\
-"Height of the playing field. AMT(8-100), default: 22.",\
+" Other:",\
 "Show debug information on the side bar.",\
 "",};
 
@@ -53,11 +57,16 @@ const char* controls[] = {\
 
 static void printHelp(char *progName, const struct option* options, const char** opt_descs, int optCount) {
     printf("Usage: %s [OPTIONS]\n\nOptions:\n", progName);
-    for (int i = 0; i < optCount; ++i) {
+    for (int i = 0, dsc = 0; i < optCount; ++i, ++dsc) { //dsc is seperate for description category formatting
+	if (opt_descs[dsc][0] == ' ') {
+	    printf("\n\n%s\n", opt_descs[dsc]);
+	    --i;
+	    continue;
+	}
 	printf("   -%c --%s%s", options[i].val, options[i].name, options[i].has_arg ? "=AMT" : "");
 	size_t whiteSpaceOffset = 26;
 	for (size_t wspace = strlen(options[i].name) + 8; wspace < whiteSpaceOffset - (options[i].has_arg ? 4 : 0); ++wspace) printf(" ");
-	char *splitDesc = strdup(opt_descs[i]);
+	char *splitDesc = strdup(opt_descs[dsc]);
 	size_t dLen = strlen(splitDesc);
 	int brokeLine = 0;
 	int lineBreak = 0;
@@ -83,7 +92,7 @@ static void printHelp(char *progName, const struct option* options, const char**
     printf("\nControls:\n");
 
     for (int i = 0; i < CONTROLS_AMT * 2; i += 2) {
-	printf("   %s", controls[i]);
+	printf("    %s", controls[i]);
 	for (int j = strlen(controls[i]); j < 6; ++j) printf(" ");
 	printf("- %s\n", controls[i + 1]);
     }
@@ -92,7 +101,7 @@ static void printHelp(char *progName, const struct option* options, const char**
 
 int parseArgs(int argc, char *argv[]) {
    char opt;
-    while ((opt = getopt_long(argc, argv, "stwzphdl:n:x:y:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "stwzphdvl:n:x:y:", long_options, NULL)) != -1) {
 	switch(opt) {
 	case 's':
 	    colors = 0;
@@ -109,6 +118,9 @@ int parseArgs(int argc, char *argv[]) {
 	case 'p': 
 	    showLineClear = 0;
 	    break; 
+	case 'v':
+	    variableGoal = 1;
+	    break;
 	case 'd': 
 	    debugInfo = 1;
 	    break; 

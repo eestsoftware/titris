@@ -202,7 +202,17 @@ Tetromino* getShadow(Tetromino *piece, int nullIfSame) {
 }
 
 void reCheckLevel() {
-    level = startLevel + (lines / 10);
+    if (!variableGoal) {
+	level = 1 + (lines / 10);
+    } else {
+	//level = 1;
+	int target = 0;
+	for (int i = 0; i <= level; ++i) {
+	    target += i * 5;
+	}
+	if (lines > target) ++level;
+    }
+    if (level < startLevel) level = startLevel;
     float newFrameTime = pow(0.8-((float)(level-1.0)*0.007), level-1);
     frameTime = floor(newFrameTime * 100);
     if (frameTime <= 0) frameTime = 1;
@@ -282,10 +292,10 @@ Vector2i checkTSpin(Vector2i centerPos, int rotation) {
 	nPos.x += dir.x;
 	nPos.y += dir.y;
 	if (nPos.y >= board.y || nPos.x >= board.x || nPos.y < 0 || nPos.x < 1) {
-	    goto checkRot;
+	    goto checkRot; // if the position is out of bounds, then it counts as filled and we can leave
 	}
-	if (minos[nPos.y][nPos.x] <= 0) continue;
-	checkRot:
+	if (minos[nPos.y][nPos.x] <= 0) continue; //If position is IN bounds, check if there is a mino
+	checkRot: //We have to leave from the out of bounds check to prevent a segfault in minos[][]
 	switch(rotation) { //Too lazy to do some rotation bs here so heres a hard-coded switch 
 	case 0:
 	    if (dir.y < 0) ++corners.x;
@@ -357,7 +367,6 @@ void setDropped(Tetromino *piece, int doBonus) {
     checkLineClears();
     didHold = 0;
     updateHoldings();
-    reCheckLevel();
 }
 
 void updateHoldings() {

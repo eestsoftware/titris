@@ -120,52 +120,58 @@ void printBoard() {
 
     if (dropping != NULL) renderTetromino(dropping, 1);
     if (paused) mvprintw(board.y + 2, boardOffset + (board.x / 2) + 10, "PAUSED");
-    if (lost) mvprintw(board.y + 3, boardOffset + board.x / 2, "GAME OVER. GG.\nFINAL SCORE: %'ld", score);
+    if (lost) {
+	mvprintw(board.y + 3, boardOffset + board.x / 2, "GAME OVER. GG.\nFINAL SCORE: %'ld", score);
+	if (variableGoal) mvprintw(board.y + 5, 0, "(VARIABLE-GOAL MODE)");
+    }
 }
+
+#define START_COLOR 21 //Arbitrary, but to avoid conflicts with the first 0-15 colors
+//20 -> gray, other are 20 + piece_idx
 
 void initColors() {
     //bg grey
-    init_color(20, 392, 392, 392);
-    int buffColor = whiteBorders ? 7 : 20;
+    init_color(START_COLOR - 1, 392, 392, 392);
+    int buffColor = whiteBorders ? 7 : (START_COLOR - 1);
     init_pair(8, buffColor, colors ? buffColor : 0);
     //I red
-    init_color(21, 940, 0, 0);
-    buffColor = termColors ? 4 : 21;
+    init_color(START_COLOR + 0, 940, 0, 0);
+    buffColor = termColors ? 4 : (START_COLOR);
     init_pair(9, buffColor, colors ? buffColor : 0);
     init_pair(17, buffColor, COLOR_BLACK);
     //J purple
-    init_color(22, 666, 0, 941);
-    buffColor = termColors ? 5 : 22;
+    init_color(START_COLOR + 1, 666, 0, 941);
+    buffColor = termColors ? 5 : (START_COLOR + 1);
     init_pair(10, buffColor, colors ? buffColor : 0);
     init_pair(18, buffColor, COLOR_BLACK);
     //L yellow
-    init_color(23, 917, 917, 0);
-    buffColor = termColors ? 6 : 23;
+    init_color(START_COLOR + 2, 917, 917, 0);
+    buffColor = termColors ? 6 : (START_COLOR + 2);
     init_pair(11, buffColor, colors ? buffColor : 0);
     init_pair(19, buffColor, COLOR_BLACK);
     //O blue
-    init_color(24, 0, 0, 805);
-    buffColor = termColors ? 1 : 24;
+    init_color(START_COLOR + 3, 0, 0, 805);
+    buffColor = termColors ? 1 : (START_COLOR + 3);
     init_pair(12, buffColor, colors ? buffColor : 0);
     init_pair(20, buffColor, COLOR_BLACK);
     //S teal
-    init_color(25, 0, 921, 921);
-    buffColor = termColors ? 3 : 25;
+    init_color(START_COLOR + 4, 0, 921, 921);
+    buffColor = termColors ? 3 : (START_COLOR + 4);
     init_pair(13, buffColor, colors ? buffColor : 0);
     init_pair(21, buffColor, COLOR_BLACK);
     //Z pink
-    init_color(26, 925, 0, 925);
-    buffColor = termColors ? (zMagenta ? 5 : 13) : 26;
+    init_color(START_COLOR + 5, 925, 0, 925);
+    buffColor = termColors ? (zMagenta ? 5 : 13) : (START_COLOR + 5);
     init_pair(14, buffColor, colors ? buffColor : 0);
     init_pair(22, buffColor, COLOR_BLACK);
     //T green
-    init_color(27, 0, 933, 0);
-    buffColor = termColors ? 2 : 27;
+    init_color(START_COLOR + 6, 0, 933, 0);
+    buffColor = termColors ? 2 : (START_COLOR + 6);
     init_pair(15, buffColor, colors ? buffColor : 0);
     init_pair(23, buffColor, COLOR_BLACK);
     //X white
-    init_color(28, 933, 933, 933);
-    buffColor = (termColors || whiteBorders) ? 7 : 28;
+    init_color(START_COLOR + 7, 933, 933, 933);
+    buffColor = (termColors || whiteBorders) ? 7 : (START_COLOR + 7);
     init_pair(16, 28, colors ? buffColor : 0);
     init_pair(24, buffColor, COLOR_BLACK);
 }
