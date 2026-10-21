@@ -61,11 +61,9 @@ int main(int argc, char *argv[]) {
     initColors();
     curs_set(0);
     cbreak();
-
     keypad(stdscr, TRUE);
     nodelay(stdscr, TRUE);
 
-    nodelay(stdscr, TRUE);
     struct timespec deadline;
     const long frame_ns = 1000000000L / 100;
 

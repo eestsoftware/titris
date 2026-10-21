@@ -231,6 +231,7 @@ void checkLineClears() {
     }
     if (lineClears <= 0) {
 	if (tSpin > 0) {
+	    b2b = 0;
 	    score += (tSpin == MTSP ? 100 : 400) * level;
 	    lastScoreAction = tSpin;
 	}
@@ -244,7 +245,6 @@ void checkLineClears() {
     if (lineClears >= 4) plusScore += 100;
     b2b = 0;
     lineClears += tSpin; // for easier score measuring
-    if (lineClears == 4 && lastScoreAction == TETRIS) b2b = 1;
     if (lineClears >= MTSP_SINGLE) {
 	plusScore += lineClears >= TSP ? 100 : 700;
 	if (lineClears >= TSP_DOUBLE) plusScore += 200;

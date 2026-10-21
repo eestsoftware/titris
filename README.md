@@ -41,7 +41,7 @@ You can specify a make PREFIX to change the installation path (default: /usr/loc
 ## Usage
 Run `titris` in any terminal. Enable `-wz` for better rendering if running inside a TTY.
 
-```sh
+```console
 Usage: titris [OPTIONS]
 
 Options:
