@@ -45,50 +45,41 @@ Run `titris` in any terminal. Enable `-wz` for better rendering if running insid
 Usage: titris [OPTIONS]
 
 Options:
-   -h --help              Show this menu.
-
+   -h, --help                 Show this menu.
 
  Gameplay Options:
-   -l --level_start=AMT   Level at which to start the game. AMT (1-15), default:
-                          1.
-
-   -v --variable_goal     Use a variable-goal system instead of the fixed-goal
-                          one. Where each level requires 5*(Level) lines to
-                          clear, instead of a fixed 10 lines per level.
-
-   -n --next_boxes=AMT    Amount of next preview windows to display. AMT (0-7),
-                          default: 3.
-
-   -x --x_width=AMT       Width of the playing field. AMT(7-100), default: 10.
-   -y --y_height=AMT      Height of the playing field.AMT(8-100), default: 22.
-   -p --popup_score       Disable the text that displays the last action that
-                          gave points.
-
-
-
+   -l, --level_start <AMT>    Level at which to start the game. AMT (1-15), default: 1.
+   -v, --variable_goal        Use a variable-goal system instead of the fixed-goal one. Where each level
+                              requires 5*(Level) lines to clear, instead of a fixed 10 lines per level.
+   -n, --next_boxes <AMT>     Amount of next preview windows to display. AMT (0-7), default: 3.
+   -x, --x_width  <AMT>       Width of the playing field. AMT(7-100), default: 10.
+   -y, --y_height <AMT>       Height of the playing field.AMT(8-100), default: 22.
+   -p, --popup_score          Disable the text that displays the last action that gave points.
+   -o, --hide_on_pause        Dont hide the playing field when the game is paused.
  Color Options:
-   -s --solid_color       Disable rendering tetrominos with solid colors, and
-                          instead render with text characters.
-
-   -t --term_colors       Disable rendering tetrominos with the terminal color
-                          scheme, and use the default one instead (Based on
-                          GNU Emacs Tetris)
-
-   -w --white_borders     Render borders with solid white. (Useful for displaying
-                          in a TTY)
-
-   -z --z_magenta         Render Z Tetromino as Magenta color (same as J) to
-                          render correctly in a TTY.
-
+   -s, --solid_color          Disable rendering tetrominos with solid colors, and instead render with
+                              text characters.
+   -t, --term_colors          Disable rendering tetrominos with the terminal color scheme, and use the
+                              default one instead (Based on GNU Emacs Tetris)
+   -w, --white_borders        Render borders with solid white. (Useful for displaying in a TTY)
+   -z, --z_magenta            Render Z Tetromino as Magenta color (same as J) to render correctly in
+                              a TTY.
+ Other:
+   -d, --debug_info           Show debug information on the side bar.
 
 Controls:
-    UP    - Rotate Clockwise
-    LEFT  - Left
-    RIGHT - Right
-    DOWN  - Soft Drop
-    SPACE - Hard Drop
-    C     - Hold
-    Z     - Rotate Counter-Clockwise
-    P     - Pause
-    Q     - Quit
+    UP    Rotate Clockwise
+    LEFT  Left
+    RIGHT Right
+    DOWN  Soft Drop
+    SPACE Hard Drop
+    C     Hold
+    Z     Rotate Counter-Clockwise
+            
+    P     Pause
+    Q     Quit
+    R     Restart
+
+Made by Silenceman (eestsoftware@gmail.com)
+Github Repo: https://github.com/eestsoftware/titris
 ```
