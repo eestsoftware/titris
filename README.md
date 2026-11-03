@@ -83,3 +83,24 @@ Controls:
 Made by Silenceman (eestsoftware@gmail.com)
 Github Repo: https://github.com/eestsoftware/titris
 ```
+
+## Updating
+
+In the source directory:
+
+```console
+$ git pull 
+$ make clean
+$ sudo make
+$ sudo make install
+```
+
+## Uninstalling
+
+In the source directory:
+
+```console
+$ sudo make uninstall
+```
+
+From there you are free to delete the source directory.
