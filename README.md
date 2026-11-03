@@ -91,7 +91,7 @@ In the source directory:
 ```console
 $ git pull 
 $ make clean
-$ sudo make
+$ make
 $ sudo make install
 ```
 
