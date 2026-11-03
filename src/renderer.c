@@ -102,27 +102,51 @@ void printBoard() {
 
     renderBox( board, (Vector2i){.x = boardOffset, .y = 0 }, NULL);
     renderBox( (Vector2i){.x = 5, .y = 5}, (Vector2i){.x = 1,. y = 1}, "HOLD");
+    
+    int renderBoard = !paused || (paused && !hideOnPause);
+
     if (held != NULL) renderTetromino(held, 0);
     for (int i = 0; i < nextBoxes; ++i) {
 	renderBox( (Vector2i){.x = 5, .y = 5}, (Vector2i){.x = (boardOffset + 2) + board.x,. y = i * 5}, i == 0 ? "NEXT" : NULL);
 	renderTetromino(next[i + 1], 0);
     }
 
-    for (int y = 0; y < board.y; ++y) {
-	for (int x = 1; x < board.x; ++x) {
-	    if (minos[y][x] <= 0) continue;
-	    attron(COLOR_PAIR( 8 + minos[y][x]));
-	    mvprintw(y, (x * 2) + boardOffset * 2, "#");
-	    if (colors) mvprintw(y, (x * 2) - 1 + boardOffset * 2, "#");
-	    attroff(COLOR_PAIR( 8 + minos[y][x]));
+    if (renderBoard) {
+	for (int y = 0; y < board.y; ++y) {
+	    for (int x = 1; x < board.x; ++x) {
+		if (minos[y][x] <= 0) continue;
+		attron(COLOR_PAIR( 8 + minos[y][x]));
+		mvprintw(y, (x * 2) + boardOffset * 2, "#");
+		if (colors) mvprintw(y, (x * 2) - 1 + boardOffset * 2, "#");
+		attroff(COLOR_PAIR( 8 + minos[y][x]));
+	    }
 	}
+
+	if (dropping != NULL) renderTetromino(dropping, 1);
+	if (paused) {
+	    attron(COLOR_PAIR(24));
+	    mvprintw(board.y + 2, boardOffset + (board.x / 2) + 11, "PAUSED");
+	    attroff(COLOR_PAIR(24));
+	}
+    } else if (paused) {
+	attron(COLOR_PAIR(24));
+	mvprintw(board.y / 2, boardOffset + (board.x / 2) + 11, "PAUSED");
+	attroff(COLOR_PAIR(24));
     }
 
-    if (dropping != NULL) renderTetromino(dropping, 1);
-    if (paused) mvprintw(board.y + 2, boardOffset + (board.x / 2) + 10, "PAUSED");
     if (lost) {
-	mvprintw(board.y + 3, boardOffset + board.x / 2, "GAME OVER. GG.\nFINAL SCORE: %'ld", score);
-	if (variableGoal) mvprintw(board.y + 5, 0, "(VARIABLE-GOAL MODE)");
+	attron(COLOR_PAIR(20));
+	mvprintw(board.y + 3, boardOffset + (board.x / 2) + 6, "GAME OVER. GG.");
+	attroff(COLOR_PAIR(20));
+	attron(COLOR_PAIR(21));
+	mvprintw(board.y + 4, boardOffset + (board.x / 2), "FINAL SCORE: ");
+	attroff(COLOR_PAIR(21));
+	attron(COLOR_PAIR(24));
+	mvprintw(board.y + 4, boardOffset + (board.x / 2) + 13, "%'ld", score);
+	if (variableGoal) mvprintw(board.y + 5, boardOffset + (board.x / 2) + 2, "(VARIABLE-GOAL MODE)");
+	if (startLevel > 1) mvprintw(board.y + 6, boardOffset + (board.x / 2) + 4, "STARTING LEVEL %d", startLevel);
+	attroff(COLOR_PAIR(24));
+	mvprintw(board.y + 7, boardOffset + (board.x / 2) - 3, "'R' to restart, and 'Q' to quit");
     }
 }
 

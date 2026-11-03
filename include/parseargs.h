@@ -2,7 +2,9 @@
 #define T_PARSEARGS_H
 
 //settings
-extern int colors, termColors, showLineClear, nextBoxes, boardX, boardY, debugInfo, startLevel, whiteBorders, zMagenta, variableGoal;
+extern int colors, termColors, showLineClear, nextBoxes, boardX,
+boardY, debugInfo, startLevel, whiteBorders, zMagenta, variableGoal,
+hideOnPause;
 
 int parseArgs(int argc, char *argv[]);
 

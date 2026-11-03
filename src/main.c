@@ -7,12 +7,11 @@
 #include "../include/parseargs.h"
 #include "../include/renderer.h"
 
-//Github.
-
-int playing = 1, frames = 0;//render param
+int playing = 1, restart = 0, frames = 0;//render param
 
 void getInput(int ch) {
     if (ch == 'q' || ch == 'Q') playing = 0;
+    if (ch == 'r' || ch == 'R') { playing = 0; restart = 1; }
     if (ch == 'p' || ch == 'P') paused ^= 1;
 
     if (dropping == NULL || paused || lost) return;
@@ -38,11 +37,23 @@ void getInput(int ch) {
     if (ch == 'c') holdPiece(dropping);
 }
 
-int main(int argc, char *argv[]) {
-    //parse flags
-    if (parseArgs(argc, argv)) return 1;
-    board.x = boardX;
-    board.y = boardY;
+void start_game() {
+    playing = 1;
+    lost = 0;
+    didHold = 0;
+    // Init variables (Do this for a easy restart)
+    free(minos);
+    free(dropping);
+    dropping = NULL;
+    free(held);
+    held = NULL;
+
+    inQueue = 0;
+    for (short int i = 0; i < 14; ++i) next[i] = NULL;
+
+    score = 0;
+    lines = 0;
+    level = startLevel;
 
     //init board
     minos = malloc(board.y * sizeof(*minos));
@@ -54,15 +65,6 @@ int main(int argc, char *argv[]) {
     reCheckLevel();
     updateHoldings();
 
-    // Init curses
-    initscr();
-    start_color();
-    use_default_colors();
-    initColors();
-    curs_set(0);
-    cbreak();
-    keypad(stdscr, TRUE);
-    nodelay(stdscr, TRUE);
 
     struct timespec deadline;
     const long frame_ns = 1000000000L / 100;
@@ -103,6 +105,28 @@ int main(int argc, char *argv[]) {
         }
         clock_nanosleep( CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline,NULL );
     }
+}
+
+int main(int argc, char *argv[]) {
+    //parse flags
+    if (parseArgs(argc, argv)) return 1;
+    board.x = boardX;
+    board.y = boardY;
+
+    // Init curses
+    initscr();
+    start_color();
+    use_default_colors();
+    initColors();
+    curs_set(0);
+    cbreak();
+    keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
+
+    do {
+	restart = 0;
+	start_game();
+    } while(restart);
  
     echo();
     nocbreak();

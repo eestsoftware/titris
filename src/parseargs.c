@@ -4,104 +4,132 @@
 #include <unistd.h>
 #include <getopt.h>
 
-int colors = 1, termColors = 1, showLineClear = 1, nextBoxes = 3, boardX = 11, boardY = 22, debugInfo = 0, startLevel = 1, whiteBorders = 0, zMagenta = 0, variableGoal = 0;
-
-#define ARG_AMT 11
+int colors = 1, termColors = 1, showLineClear = 1, nextBoxes = 3, boardX = 11, boardY = 22, debugInfo = 0, startLevel = 1, whiteBorders = 0, zMagenta = 0, variableGoal = 0, hideOnPause = 1;
 
 static const struct option long_options[] = {
-    {"help", no_argument, 0, 'h'},
-    {"level_start", required_argument, 0, 'l'},
-    {"variable_goal", no_argument, 0, 'v'},
-    {"next_boxes", required_argument, 0, 'n'},
-    {"x_width", required_argument, 0, 'x'},
-    {"y_height", required_argument, 0, 'y'},
-    {"popup_score", no_argument, 0, 'p'},
-    {"solid_color", no_argument, 0, 's'},
-    {"term_colors", no_argument, 0, 't'},
-    {"white_borders", no_argument, 0, 'w'},
-    {"z_magenta", no_argument, 0, 'z'},
-    {"debug_info", no_argument, 0, 'd'},
+    {"help"		, no_argument, 0,	'h'},
+    {"level_start"	, required_argument, 0, 'l'},
+    {"variable_goal"	, no_argument, 0,	'v'},
+    {"next_boxes"	, required_argument, 0, 'n'},
+    {"x_width"		, required_argument, 0, 'x'},
+    {"y_height"		, required_argument, 0, 'y'},
+    {"popup_score"	, no_argument, 0,	'p'},
+    {"hide_on_pause"	, no_argument, 0,	'o'},
+    {"solid_color"	, no_argument, 0,	's'},
+    {"term_colors"	, no_argument, 0,	't'},
+    {"white_borders"	, no_argument, 0,	'w'},
+    {"z_magenta"	, no_argument, 0,	'z'},
+    {"debug_info"	, no_argument, 0,	'd'},
     {0, 0, 0, 0}
 };
 
-const char* descs[] = { "Show this menu.",\
-" Gameplay Options:",\
-"Level at which to start the game. AMT (1-15), default: 1.",\
-"Use a variable-goal system instead of the fixed-goal one. Where each level requires 5*(Level) lines to clear, instead of a fixed 10 lines per level.",\
-"Amount of next preview windows to display. AMT (0-7), default: 3.",\
-"Width of the playing field. AMT(7-100), default: 10.",\
-"Height of the playing field.AMT(8-100), default: 22.",\
-"Disable the text that displays the last action that gave points.",\
-" Color Options:",\
-"Disable rendering tetrominos with solid colors, and instead render with text characters.",\
-"Disable rendering tetrominos with the terminal color scheme, and use the default one instead (Based on GNU Emacs Tetris)",\
-"Render borders with solid white. (Useful for displaying in a TTY)",\
-"Render Z Tetromino as Magenta color (same as J) to render correctly in a TTY.",\
-" Other:",\
-"Show debug information on the side bar.",\
-"",};
-
-#define CONTROLS_AMT 9
-
-const char* controls[] = {\
-"UP", "Rotate Clockwise",\
-"LEFT", "Left",\
-"RIGHT", "Right",\
-"DOWN", "Soft Drop",\
-"SPACE", "Hard Drop",\
-"C", "Hold",\
-"Z", "Rotate Counter-Clockwise",\
-"P", "Pause",\
-"Q", "Quit",\
+struct desc_information {
+    char* desc		;
+    unsigned int is_opt	;
+    char* arg_name	;
 };
 
-static void printHelp(char *progName, const struct option* options, const char** opt_descs, int optCount) {
-    printf("Usage: %s [OPTIONS]\n\nOptions:\n", progName);
-    for (int i = 0, dsc = 0; i < optCount; ++i, ++dsc) { //dsc is seperate for description category formatting
-	if (opt_descs[dsc][0] == ' ') {
-	    printf("\n\n%s\n", opt_descs[dsc]);
+static const struct desc_information descs[] = {
+    { "", 30, "OFFS" },\
+    { "Show this menu.", 1, "" },\
+    { "\n Gameplay Options:", 0, "" },\
+    { "Level at which to start the game. AMT (1-15), default: 1.", 1, "<AMT>" },\
+    { "Use a variable-goal system instead of the fixed-goal one. Where each level requires 5*(Level) lines to clear, instead of a fixed 10 lines per level.", 1, "" },\
+    { "Amount of next preview windows to display. AMT (0-7), default: 3.", 1, "<AMT>" },\
+    { "Width of the playing field. AMT(7-100), default: 10.", 1, " <AMT>" },\
+    { "Height of the playing field.AMT(8-100), default: 22.", 1, "<AMT>" },\
+    { "Disable the text that displays the last action that gave points.", 1, "" },\
+    { "Dont hide the playing field when the game is paused.", 1, "" },\
+    { " Color Options:", 0, "" },\
+    { "Disable rendering tetrominos with solid colors, and instead render with text characters.", 1, "" },\
+    { "Disable rendering tetrominos with the terminal color scheme, and use the default one instead (Based on GNU Emacs Tetris)", 1, "" },\
+    { "Render borders with solid white. (Useful for displaying in a TTY)", 1, "" },\
+    { "Render Z Tetromino as Magenta color (same as J) to render correctly in a TTY.", 1, "" },\
+    { " Other:", 0, "" },\
+    { "Show debug information on the side bar.", 1, "" },\
+    { "", 10, "OFFS" },\
+    { "\nControls:", 0, "" },\
+    { "Rotate Clockwise",		2, "UP" },\
+    { "Left",				2, "LEFT" },\
+    { "Right",				2, "RIGHT" },\
+    { "Soft Drop",			2, "DOWN" },\
+    { "Hard Drop",			2, "SPACE" },\
+    { "Hold",				2, "C" },\
+    { "Rotate Counter-Clockwise",	2, "Z" },\
+    { "  ", 2, "" },\
+    { "Pause",				2, "P" },\
+    { "Quit",				2, "Q" },\
+    { "Restart",			2, "R" },\
+    { "\nMade by Silenceman (eestsoftware@gmail.com)\nGithub Repo: https://github.com/eestsoftware/titris", 0, "NOCOL"},\
+};
+
+#define COLOR_HEADING   "\x1b[32m"
+#define COLOR_OPTION    "\x1b[36m"
+#define COLOR_ARG	"\x1b[34m"
+#define COLOR_DESC	"\x1b[0m"
+#define COLOR_RESET	"\x1b[0m"
+
+#define MAX_LINE_LEN 70
+
+static void print_help(const struct desc_information* opt_descs, int desc_length, char *prog_name, const struct option* options) {
+    if (prog_name != NULL) {
+    printf(COLOR_HEADING	"Usage:" COLOR_RESET\
+    COLOR_OPTION		" %s" COLOR_RESET\
+    COLOR_ARG			" [OPTIONS]" COLOR_RESET "\n\n"\
+    COLOR_HEADING		"Options:" COLOR_RESET "\n"\
+    , prog_name);
+    }
+    //dsc is seperate for description category formatting
+    size_t whitespace_offset = 30;
+    for (int i = 0, dsc = 0; dsc < desc_length; ++i, ++dsc) { 
+	char *splitDesc = strdup(opt_descs[dsc].desc);
+        if (strlen(splitDesc) <= 1) {
+	    if (strncmp(opt_descs[dsc].arg_name, "OFFS", 5) == 0) whitespace_offset = opt_descs[dsc].is_opt;
 	    --i;
 	    continue;
 	}
-	printf("   -%c --%s%s", options[i].val, options[i].name, options[i].has_arg ? "=AMT" : "");
-	size_t whiteSpaceOffset = 26;
-	for (size_t wspace = strlen(options[i].name) + 8; wspace < whiteSpaceOffset - (options[i].has_arg ? 4 : 0); ++wspace) printf(" ");
-	char *splitDesc = strdup(opt_descs[dsc]);
+	size_t wspace = 10; // This is all the space and - characters in a default formatted opt
+	if (opt_descs[dsc].is_opt == 0) {
+	    printf("%s%s" COLOR_RESET "\n", strncmp(opt_descs[dsc].arg_name, "NOCOL", 6) == 0 ? COLOR_RESET : COLOR_HEADING, splitDesc);
+	    --i;
+	    free(splitDesc);
+	    continue;
+	} else if (opt_descs[dsc].is_opt == 2) {
+	    printf(COLOR_OPTION "    %s" COLOR_RESET, opt_descs[dsc].arg_name);
+	    wspace = 4 + strlen(opt_descs[dsc].arg_name);
+	} else {
+	    if (options == NULL) continue;
+	    printf(COLOR_OPTION "   -%c, --%s" COLOR_RESET COLOR_ARG " %s" COLOR_RESET,
+	    options[i].val,
+	    options[i].name,
+	    options[i].has_arg ? opt_descs[dsc].arg_name : "");
+	    wspace += strlen(options[i].name);
+	}
+	for (; wspace < whitespace_offset - (opt_descs[dsc].is_opt == 1 ? strlen(opt_descs[dsc].arg_name) : 0); ++wspace) printf(" ");
+	printf(COLOR_DESC);
 	size_t dLen = strlen(splitDesc);
-	int brokeLine = 0;
 	int lineBreak = 0;
-	for (size_t j = 0; dLen >= 50 && j < dLen; ++j, ++lineBreak) {
-	    if (lineBreak < 50 || splitDesc[j] != ' ') continue;
+	for (size_t j = 0; dLen >= MAX_LINE_LEN && j < dLen; ++j, ++lineBreak) {
+	    if (lineBreak < MAX_LINE_LEN || splitDesc[j] != ' ') continue;
 	    splitDesc[j] = '\n';
 	    lineBreak = 0;
-	    brokeLine = 1;
 	}// instead of padding the string by insreting, do this BS
 	for (size_t j = 0; j < dLen; ++j) {
 	    if (splitDesc[j] == '\n') {
 		printf("\n");
-		for (size_t wspace = 0; wspace < whiteSpaceOffset; ++wspace) printf(" ");
+		for (size_t wspace = 0; wspace < whitespace_offset; ++wspace) printf(" ");
 		continue;
 	    }
 	    printf("%c", splitDesc[j]);
 	}
-	printf("\n");
-	if (brokeLine) printf("\n");
+	printf(COLOR_RESET "\n");
 	free(splitDesc);
     }
-
-    printf("\nControls:\n");
-
-    for (int i = 0; i < CONTROLS_AMT * 2; i += 2) {
-	printf("    %s", controls[i]);
-	for (int j = strlen(controls[i]); j < 6; ++j) printf(" ");
-	printf("- %s\n", controls[i + 1]);
-    }
-    //printf("\n\nGithub Repo: \n", progName); TODO: Add github repo
 }
 
 int parseArgs(int argc, char *argv[]) {
    char opt;
-    while ((opt = getopt_long(argc, argv, "stwzphdvl:n:x:y:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "stwzphdvol:n:x:y:", long_options, NULL)) != -1) {
 	switch(opt) {
 	case 's':
 	    colors = 0;
@@ -118,6 +146,9 @@ int parseArgs(int argc, char *argv[]) {
 	case 'p': 
 	    showLineClear = 0;
 	    break; 
+	case 'o': 
+	    hideOnPause = 0;
+	    break; 
 	case 'v':
 	    variableGoal = 1;
 	    break;
@@ -125,7 +156,7 @@ int parseArgs(int argc, char *argv[]) {
 	    debugInfo = 1;
 	    break; 
 	case 'h':
-	    printHelp(argv[0], long_options, descs, ARG_AMT);
+	    print_help(descs, sizeof(descs) / sizeof(descs[0]), argv[0], long_options);
 	    return 1;
 	    break;
 	case 'l':
